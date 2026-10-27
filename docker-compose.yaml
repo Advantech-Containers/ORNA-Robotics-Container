@@ -6,22 +6,58 @@ name: orna_app
 #
 #----------------------------------------------------------------------------------------------------------------
 services:
+  # Prepare the IDE image alias; the backend creates the real IDE container.
+  ide_image:
+    image: ${ORNA_IDE_IMAGE:-harbor.edgesync.cloud/orna_system/orna_ide:x86_64-v0.3.0}
+    entrypoint: ["/bin/true"]
+    command: []
+    restart: "no"
+
+  ide_image_tag:
+    image: ${ORNA_SERVICES_IMAGE:-harbor.edgesync.cloud/orna_system/orna_service:x86_64-v0.3.0}
+    user: "0:0"
+    entrypoint: ["docker", "--host=unix:///var/run/docker.sock"]
+    command:
+      - image
+      - tag
+      - ${ORNA_IDE_IMAGE:-harbor.edgesync.cloud/orna_system/orna_ide:x86_64-v0.3.0}
+      - orna-code-server:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      ide_image:
+        condition: service_completed_successfully
+    restart: "no"
+
   #----------------------------------------------------------------------------------------------------------------
   #
   #----------------------------------------------------------------------------------------------------------------
   orna_services:
-    image: ${ORNA_SERVICES_IMAGE}
-    hostname: ${HOSTNAME}
+    depends_on:
+      ide_image_tag:
+        condition: service_completed_successfully
+    image: ${ORNA_SERVICES_IMAGE:-harbor.edgesync.cloud/orna_system/orna_service:x86_64-v0.3.0}
+    hostname: ${HOSTNAME:-orna-edge}
     environment:
-      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-0} 
+      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-0}
+      ORNA_AI_MODELS_PATH: /etc/orna/ai_models
     stdin_open: true
     tty: true
     runtime: nvidia
     gpus: all
     network_mode: host
     privileged: true
-    restart: unless-stopped
+    restart: always
+    extra_hosts:
+      - "host.docker.orna:127.0.0.1"
     volumes:
+      - type: bind
+        source: /home/orna/ORNA_DIR/.ORNA_AI_MODELS/FoundationPose
+        target: /etc/orna/ai_models/.ORNA_AI_MODELS/FoundationPose
+      # docker.sock: enable entrypoint temp-container fallback for FP engine build
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
       #0
       - type: bind
         source: /dev
@@ -41,12 +77,12 @@ services:
   #
   #----------------------------------------------------------------------------------------------------------------
   orna_ui:
-    image:  ${ORNA_UI_IMAGE}
-    hostname: ${HOSTNAME}
+    image: ${ORNA_UI_IMAGE:-harbor.edgesync.cloud/orna_system/orna_ui:x86_64-v0.3.0}
+    hostname: ${HOSTNAME:-orna-edge}
     ports:
       - "4173:80"
     environment:
       - NODE_ENV=production
-    restart: unless-stopped
+    restart: always
 #_____________________________________________________________________________________________________________________#
 #_____________________________________________________________________________________________________________________#

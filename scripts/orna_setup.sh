@@ -10,7 +10,7 @@ readonly HOST_ARCH="$([ "$(uname -m)" = "aarch64" ] && ([ -f "/etc/nv_tegra_rele
 readonly ORNA_PROJECT="harbor.edgesync.cloud/orna_system"
 declare -A ORNA_IMAGES
 declare -A ORNA_IMAGE_VERSIONS
-IMAGES_VERSION="v0.2.0"
+IMAGES_VERSION="v0.3.0"
 
 STATE_FILE="${BASE_DIR}/.orna_setup_state"
 VERSION_FILE="${BASE_DIR}/.orna.version"
@@ -184,6 +184,7 @@ write_runtime_env() {
 HOSTNAME=${env_hostname}
 ORNA_SERVICES_IMAGE=${ORNA_IMAGES[be]}
 ORNA_UI_IMAGE=${ORNA_IMAGES[fe]}
+ORNA_IDE_IMAGE=${ORNA_IMAGES[ide]}
 EOF
 }
 

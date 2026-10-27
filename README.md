@@ -8,7 +8,7 @@
 
 ## Container Functional Overview
 
-This container provides the complete ORNA runtime environment for [FILL: supported Advantech platforms], including:
+This container provides the complete ORNA runtime environment for Advantech edge devices, such as MIC-770 V3, AIR-030, and MIC-733-AO, including:
 
 - ORNA Core runtime (OrnaPy SDK + execution engine)
 - Vision stack: Deep Learning Model, Grounding DINO zero-shot detection, SAM2, pose estimation
@@ -17,6 +17,48 @@ This container provides the complete ORNA runtime environment for [FILL: support
 - Web UI: Workcell Configurator, Smart Annotator, IDE Mode, Live Diagnosis
 
 Designed for deployment by system integrators and automation engineers on Advantech edge devices — no robotics AI expertise required.
+
+---
+
+## Container Key Features
+
+- **Natural-language robot programming** — Describe tasks in plain language and execute them through the ORNA runtime.
+- **AI-powered perception** — Combine trained object detection, zero-shot detection, segmentation, and pose estimation for robotic vision tasks.
+- **Workcell configuration** — Configure robots, cameras, and grippers through the web-based Workcell Configurator.
+- **Integrated development tools** — Annotate images with Smart Annotator, develop workflows in IDE Mode, and inspect system behavior with Live Diagnosis.
+- **GPU-accelerated edge deployment** — Run the containerized runtime on supported Advantech platforms with NVIDIA GPUs.
+
+---
+
+## SW Components
+
+| Component | Purpose |
+| --- | --- |
+| ORNA Core (OrnaPy SDK + execution engine) | Robot task orchestration and execution |
+| ROS 2 Humble + MoveIt 2 | Robot communication, motion planning, and planning scene management |
+| AI vision stack | Deep learning detection, Grounding DINO, SAM2 segmentation, and pose estimation |
+| Hardware drivers | Universal Robots RTDE, Orbbec cameras, and supported grippers |
+| ORNA Web UI | Workcell Configurator, Smart Annotator, IDE Mode, and Live Diagnosis |
+| NGINX | Web UI hosting |
+
+---
+
+## Device OS
+
+- **MIC-770 V3 (x86_64):** Ubuntu 22.04 LTS with NVIDIA drivers.
+- **AIR-030 / MIC-733-AO (Jetson):** NVIDIA JetPack with Ubuntu 22.04. The host JetPack/L4T version must match the requirements of the selected Jetson image.
+
+All devices require Docker Engine and NVIDIA Container Toolkit.
+
+---
+
+## Container OS
+
+| Container | Base OS |
+| --- | --- |
+| ORNA service (x86_64) | Ubuntu 22.04 LTS |
+| ORNA service (Jetson) | Ubuntu 22.04-based NVIDIA L4T JetPack image (r36.4.0) |
+| ORNA Web UI | Alpine Linux (NGINX image) |
 
 ---
 
@@ -52,15 +94,25 @@ Before running the container, ensure the host system has the following installed
 
 ---
 
+## Integration with WEDA
+
+ORNA supports deployment and container management through Advantech WEDA on supported edge devices.
+
+![ORNA container stack in the WEDA console](docs/images/09-integration-with-weda.png)
+
+---
+
 ## Quick Start Guide
 
 ### 1. Install ORNA on your system
 
-#### 1.1. Clone the orna\_system repo and start the control program
+#### 1.1. Clone this repository and start the control program
 
-Go to the orna\_system folder and run:
+Clone the repository and start the control program:
 
-```
+```bash
+git clone https://github.com/Advantech-Containers/ORNA-Robotics-Container.git
+cd ORNA-Robotics-Container
 bash orna.sh
 ```
 
@@ -76,7 +128,7 @@ Choose “Yes” here:
 
 #### 1.2. Install ORNA images
 
-Go to **3 install ORNA images,** enter your Harbor credentials, and it will download the latest images (currently v0.2.0).
+Go to **3 install ORNA images,** enter your Harbor credentials, and it will download the configured service, UI, and IDE images (default: v0.3.0).
 
 ![image-20260729-031121.png](docs/images/04-enter-registry-username.png)
 

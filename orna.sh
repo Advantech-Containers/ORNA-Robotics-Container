@@ -6,6 +6,16 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPTS_DIR="${SCRIPT_DIR}/scripts"
 readonly ORNA_TITLE="ORNA control"
 readonly RUNTIME_ENV_FILE="${SCRIPT_DIR}/.env"
+readonly -a NATIVE_SERVICE_NAMES=(
+    orna-frontend.service
+    orna-stack-backend.service
+    orna-lifecycle-manager.service
+    orna-observer.service
+    ParameterServer_Service.service
+    orna-grasp-point-server.service
+    orna-gripper-command-bridge.service
+    orna-ur-program-watchdog.service
+)
 
 if [[ -f "${SCRIPTS_DIR}/launch_app.sh" ]]; then
     # shellcheck disable=SC1090
@@ -97,6 +107,94 @@ app_stop() {
     launch_app_stop
 }
 
+app_stop_native_services() {
+    if ! confirm_box "Stop and disable all ORNA native systemd services? Docker services will remain untouched."; then
+        return 0
+    fi
+
+    sudo systemctl disable --now "${NATIVE_SERVICE_NAMES[@]}"
+    show_msg "ORNA native systemd services were stopped and disabled. Docker services were not changed."
+}
+
+app_start_native_services() {
+    local service
+    local status_summary=""
+    local systemctl_output=""
+
+    if ! confirm_box "Enable and start all ORNA native systemd services? Stop the Docker application first to avoid conflicts."; then
+        return 0
+    fi
+
+    if ! systemctl_output=$(sudo systemctl enable --now "${NATIVE_SERVICE_NAMES[@]}" 2>&1); then
+        show_error "Failed to enable/start ORNA native services:\n\n${systemctl_output}"
+        return 1
+    fi
+
+    for service in "${NATIVE_SERVICE_NAMES[@]}"; do
+        status_summary+="${service}: $(systemctl is-active "${service}" 2>/dev/null || true)"$'\n'
+    done
+
+    show_msg "ORNA native systemd services were enabled and started.\n\n${status_summary}"
+}
+
+app_check_native_services() {
+    local service
+    local active_status
+    local enabled_status
+    local status_summary=""
+
+    for service in "${NATIVE_SERVICE_NAMES[@]}"; do
+        active_status=$(systemctl is-active "${service}" 2>/dev/null || true)
+        enabled_status=$(systemctl is-enabled "${service}" 2>/dev/null || true)
+        active_status=${active_status:-not-found}
+        enabled_status=${enabled_status:-not-found}
+        status_summary+="${service}: active=${active_status}, enabled=${enabled_status}"$'\n'
+    done
+
+    show_msg "ORNA native systemd service status:\n\n${status_summary}"
+}
+
+developer_tools_whiptail() {
+    while true; do
+        local choice
+
+        choice=$(
+            whiptail --title "$ORNA_TITLE - Developer tools" --menu "Choose an action:" 16 78 4 \
+                "1" "Stop native services" \
+                "2" "Start native services" \
+                "3" "Check native services status" \
+                "4" "Back" \
+                3>&1 1>&2 2>&3
+        ) || break
+
+        case "$choice" in
+            1) app_stop_native_services ;;
+            2) app_start_native_services ;;
+            3) app_check_native_services ;;
+            4) break ;;
+        esac
+    done
+}
+
+developer_tools_cli() {
+    while true; do
+        printf '\nDeveloper tools\n'
+        printf '1) Stop native services\n'
+        printf '2) Start native services\n'
+        printf '3) Check native services status\n'
+        printf '4) Back\n'
+        read -r -p "Choose an action [1-4]: " choice
+
+        case "$choice" in
+            1) app_stop_native_services ;;
+            2) app_start_native_services ;;
+            3) app_check_native_services ;;
+            4) break ;;
+            *) printf 'Invalid choice.\n' ;;
+        esac
+    done
+}
+
 app_remove() {
     if confirm_box "This will remove containers and volumes. Continue?"; then
         launch_app_remove
@@ -108,7 +206,7 @@ menu_whiptail() {
         local choice
 
         choice=$(
-            whiptail --title "$ORNA_TITLE" --menu "Choose an action:" 18 78 8 \
+            whiptail --title "$ORNA_TITLE" --menu "Choose an action:" 18 78 9 \
                 "1" "Check system dependencies" \
                 "2" "Setup system" \
                 "3" "Install ORNA images" \
@@ -116,7 +214,8 @@ menu_whiptail() {
                 "5" "Start application" \
                 "6" "Stop application" \
                 "7" "Remove containers/volumes" \
-                "8" "Exit" \
+                "8" "Developer tools" \
+                "9" "Exit" \
                 3>&1 1>&2 2>&3
         ) || break
 
@@ -128,7 +227,8 @@ menu_whiptail() {
             5) app_start ;;
             6) app_stop ;;
             7) app_remove ;;
-            8) break ;;
+            8) developer_tools_whiptail ;;
+            9) break ;;
         esac
     done
 }
@@ -143,8 +243,9 @@ menu_cli() {
         printf '5) Start application\n'
         printf '6) Stop application\n'
         printf '7) Remove containers/volumes\n'
-        printf '8) Exit\n'
-        read -r -p "Choose an action [1-8]: " choice
+        printf '8) Developer tools\n'
+        printf '9) Exit\n'
+        read -r -p "Choose an action [1-9]: " choice
 
         case "$choice" in
             1) check_deps ;;
@@ -154,7 +255,8 @@ menu_cli() {
             5) app_start ;;
             6) app_stop ;;
             7) app_remove ;;
-            8) break ;;
+            8) developer_tools_cli ;;
+            9) break ;;
             *) printf 'Invalid choice.\n' ;;
         esac
     done
