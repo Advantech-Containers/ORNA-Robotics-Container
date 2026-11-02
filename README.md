@@ -12,8 +12,8 @@ This container provides the complete ORNA runtime environment for Advantech edge
 
 - ORNA Core runtime (OrnaPy SDK + execution engine)
 - Vision stack: Deep Learning Model, Grounding DINO zero-shot detection, SAM2, pose estimation
-- Robot drivers: UR RTDE driver
-- Camera drivers: Orbbec SDK + supported models 335Lg/335Le
+- Robot support: Major brands such as Universal Robots
+- Camera support: Major brands such as Orbbec
 - Web UI: Workcell Configurator, Smart Annotator, IDE Mode, Live Diagnosis
 
 Designed for deployment by system integrators and automation engineers on Advantech edge devices — no robotics AI expertise required.
@@ -30,6 +30,14 @@ Designed for deployment by system integrators and automation engineers on Advant
 
 ---
 
+## Architecture Diagram
+
+The ORNA Web UI provides tools for workcell configuration, development, and diagnosis. The edge runtime combines ORNA Core, AI vision, and ROS 2 / MoveIt 2 for task orchestration, motion planning, and integration with supported robots, cameras, and grippers.
+
+![ORNA architecture showing the Web UI, ORNA Core, AI vision, robot runtime, and hardware integration on the edge platform](docs/images/10-orna-architecture.webp)
+
+---
+
 ## SW Components
 
 | Component | Purpose |
@@ -37,7 +45,7 @@ Designed for deployment by system integrators and automation engineers on Advant
 | ORNA Core (OrnaPy SDK + execution engine) | Robot task orchestration and execution |
 | ROS 2 Humble + MoveIt 2 | Robot communication, motion planning, and planning scene management |
 | AI vision stack | Deep learning detection, Grounding DINO, SAM2 segmentation, and pose estimation |
-| Hardware drivers | Universal Robots RTDE, Orbbec cameras, and supported grippers |
+| Hardware integration | Support for major robot and camera brands, such as Universal Robots and Orbbec, and supported grippers |
 | ORNA Web UI | Workcell Configurator, Smart Annotator, IDE Mode, and Live Diagnosis |
 | NGINX | Web UI hosting |
 
@@ -76,10 +84,10 @@ All devices require Docker Engine and NVIDIA Container Toolkit.
 
 ## Supported Peripherals
 
-| Category | Validated Hardware |
+| Category | Supported Hardware Examples |
 | --- | --- |
 | Robot | Universal Robots |
-| 3D Camera | Orbbec Gemini 335Lg / 335Le |
+| 3D Camera | Orbbec |
 | Gripper | DH-Robotics AG-95 |
 
 ---

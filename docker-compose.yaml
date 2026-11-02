@@ -1,46 +1,14 @@
-#----------------------------------------------------------------------------------------------------------------
-#
-#----------------------------------------------------------------------------------------------------------------
 name: orna_app
-#----------------------------------------------------------------------------------------------------------------
-#
-#----------------------------------------------------------------------------------------------------------------
+
 services:
-  # Prepare the IDE image alias; the backend creates the real IDE container.
-  ide_image:
-    image: ${ORNA_IDE_IMAGE:-harbor.edgesync.cloud/orna_system/orna_ide:x86_64-v0.3.0}
-    entrypoint: ["/bin/true"]
-    command: []
-    restart: "no"
-
-  ide_image_tag:
-    image: ${ORNA_SERVICES_IMAGE:-harbor.edgesync.cloud/orna_system/orna_service:x86_64-v0.3.0}
-    user: "0:0"
-    entrypoint: ["docker", "--host=unix:///var/run/docker.sock"]
-    command:
-      - image
-      - tag
-      - ${ORNA_IDE_IMAGE:-harbor.edgesync.cloud/orna_system/orna_ide:x86_64-v0.3.0}
-      - orna-code-server:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    depends_on:
-      ide_image:
-        condition: service_completed_successfully
-    restart: "no"
-
-  #----------------------------------------------------------------------------------------------------------------
-  #
-  #----------------------------------------------------------------------------------------------------------------
+  # The service entrypoint loads IDE/Qdrant before starting Backend.
   orna_services:
-    depends_on:
-      ide_image_tag:
-        condition: service_completed_successfully
-    image: ${ORNA_SERVICES_IMAGE:-harbor.edgesync.cloud/orna_system/orna_service:x86_64-v0.3.0}
+    image: harbor.edgesync.cloud/orna_system/orna_service:x86_64-v0.3.0
     hostname: ${HOSTNAME:-orna-edge}
     environment:
       ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-0}
       ORNA_AI_MODELS_PATH: /etc/orna/ai_models
+      DOCKER_HOST: unix:///host-docker/docker.sock
     stdin_open: true
     tty: true
     runtime: nvidia
@@ -51,38 +19,35 @@ services:
     extra_hosts:
       - "host.docker.orna:127.0.0.1"
     volumes:
-      - type: bind
-        source: /home/orna/ORNA_DIR/.ORNA_AI_MODELS/FoundationPose
+      # Preserve the existing model volume and generated TensorRT engines.
+      - type: volume
+        source: foundationpose_models_v1
         target: /etc/orna/ai_models/.ORNA_AI_MODELS/FoundationPose
-      # docker.sock: enable entrypoint temp-container fallback for FP engine build
+      # Keep the host socket outside /run to survive the systemd remount.
       - type: bind
         source: /var/run/docker.sock
-        target: /var/run/docker.sock
-      #0
+        target: /host-docker/docker.sock
       - type: bind
         source: /dev
         target: /dev
         read_only: false
-      #1
       - type: bind
         source: /opt/orna_dir
         target: /opt/orna_dir
         read_only: false
-      #2
       - type: bind
         source: ./system_logs
         target: /opt/orna_backend/logs
         read_only: false
-  #----------------------------------------------------------------------------------------------------------------
-  #
-  #----------------------------------------------------------------------------------------------------------------
+
   orna_ui:
-    image: ${ORNA_UI_IMAGE:-harbor.edgesync.cloud/orna_system/orna_ui:x86_64-v0.3.0}
+    image: harbor.edgesync.cloud/orna_system/orna_ui:x86_64-v0.3.0
     hostname: ${HOSTNAME:-orna-edge}
     ports:
       - "4173:80"
     environment:
       - NODE_ENV=production
     restart: always
-#_____________________________________________________________________________________________________________________#
-#_____________________________________________________________________________________________________________________#
+
+volumes:
+  foundationpose_models_v1: {}
