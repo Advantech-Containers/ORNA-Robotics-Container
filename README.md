@@ -5,6 +5,7 @@
 > Deploy AI-powered robot vision and orchestration on Advantech edge hardware. Frontier AI-powered Perception, natural-language robot programming, and deterministic execution for Industrial Robots
 
 ---
+![ORNA deployment demo on WEDA](docs/images/Demo-for-WEDA.gif)
 
 ## Container Functional Overview
 
